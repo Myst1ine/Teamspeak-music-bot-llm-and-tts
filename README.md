@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/TeamSpeak-音乐机器人-blue?style=for-the-badge&logo=teamspeak" alt="TSMusicBot" />
+  <img src="https://img.shields.io/badge/TeamSpeak-HAJIMI-blue?style=for-the-badge&logo=teamspeak" alt="HAJIMI" />
 </p>
 
-<h1 align="center">TSMusicBot</h1>
+<h1 align="center">HAJIMI</h1>
 
 <p align="center">
-  <strong>TeamSpeak 音乐机器人</strong> — 网易云音乐 + QQ 音乐 + 哔哩哔哩 + YouTube（可选），YesPlayMusic 风格 WebUI 控制面板
+  <strong>接入 AI 的 TeamSpeak 音乐机器人</strong> — 音乐播放 + AI 对话 + 文字转语音，让机器人能在频道里开口说话
 </p>
 
 <p align="center">
@@ -17,12 +17,21 @@
   <img src="https://img.shields.io/badge/Docker-支持-2496ED?logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/BiliBili-支持-00a1d6?logo=bilibili&logoColor=white" />
   <img src="https://img.shields.io/badge/YouTube-可选-FF0000?logo=youtube&logoColor=white" />
+  <img src="https://img.shields.io/badge/AI-OpenAI%20Compatible-10a37f" />
+  <img src="https://img.shields.io/badge/TTS-Voice%20Reply-f97316" />
   <img src="https://img.shields.io/badge/TS3-支持-2580C3?logo=teamspeak&logoColor=white" />
   <img src="https://img.shields.io/badge/TS6-支持-2580C3?logo=teamspeak&logoColor=white" />
 </p>
 
+> HAJIMI 基于开源 TeamSpeak 点歌机器人改造，保留多音源播放、WebUI、多机器人等能力，并新增 AI 助手和 TTS 语音回复。机器人现在不仅能放歌，也可以理解文字请求、聊天，并把回复合成为语音播放到 TeamSpeak 频道。
+
 ## 功能特性
 
+- **AI 助手接入** — 支持 OpenAI 兼容的 Chat Completions API，可使用 DeepSeek、OpenAI 或自建兼容服务。通过 `!ai <内容>` 与机器人对话，也可以让 AI 解析"帮我放一首..."这类自然语言播放请求
+- **AI 智能点歌** — AI 会根据用户意图返回播放动作，自动调用网易云、QQ 音乐、B站或 YouTube 搜索并播放，不必记复杂命令参数
+- **文字转语音（TTS）** — 支持 OpenAI 兼容的 `/v1/audio/speech` 服务，通过 `!say <文字>` 让机器人在当前语音频道说话
+- **AI 回复语音播报** — `!ai` 的文字回复可自动转成语音播放。AI 会先把中文回复转成更适合语音合成的日语口播文本，再交给 TTS 服务合成，适合可爱活泼的语音人设
+- **音乐与语音衔接** — AI/TTS 播报会临时接管播放管线；AI 回复结束后会尝试从原进度恢复之前播放的歌曲
 - **WebUI 鉴权（必选）** — 用户名 + 密码登录，多用户、两种角色（管理员 / 成员），bcrypt 加密、HttpOnly 会话 Cookie，CSRF 防护，WebSocket 同样鉴权。首次访问引导创建管理员。从无鉴权旧版本升级时请参阅 [更新升级](#更新升级) 章节
 - **多平台音源** — 网易云音乐 + QQ 音乐 + 哔哩哔哩（默认内置），YouTube 可选启用（通过 yt-dlp），统一搜索，结果标注来源
 - **真实客户端协议 (TS3/TS6 双协议)** — 机器人在 TeamSpeak 中可见（非 ServerQuery 隐身模式），自动检测并适配 TS3 和 TS6 服务器，支持 TS6 HTTP Query API
@@ -68,8 +77,8 @@ FFmpeg **已自动内置**，无需手动安装。
 
 ```bash
 # 下载项目
-git clone https://github.com/ZHANGTIANYAO1/teamspeak-music-bot.git
-cd teamspeak-music-bot
+git clone https://github.com/Myst1ine/-teamspeak-.git
+cd -teamspeak-
 
 # 安装依赖
 npm install
@@ -89,8 +98,8 @@ npm start
 所有依赖已内置（Node.js、FFmpeg、Opus 编码器），无需安装任何额外软件。
 
 ```bash
-git clone https://github.com/ZHANGTIANYAO1/teamspeak-music-bot.git
-cd teamspeak-music-bot/scripts/docker
+git clone https://github.com/Myst1ine/-teamspeak-.git
+cd -teamspeak-/scripts/docker
 docker-compose up -d
 ```
 
@@ -310,6 +319,8 @@ sudo systemctl start tsmusicbot
 | `!album <ID>` | 加载专辑 |
 | `!artist <歌手名>` | 按歌手循环播放（支持 `-q`/`-b`/`-y`） |
 | `!fm` | 私人 FM（网易云，自动续播） |
+| `!ai <内容>` | AI 对话 / 智能点歌。AI 回复会尝试通过 TTS 语音播报 |
+| `!say <文字>` | 文字转语音，让机器人在语音频道直接说话 |
 | `!lyrics` | 显示当前歌词 |
 | `!now` | 当前播放信息 |
 | `!vote` | 投票跳过当前歌曲 |
@@ -317,6 +328,31 @@ sudo systemctl start tsmusicbot
 | `!help` | 显示帮助信息 |
 
 > 命令前缀默认为 `!`，可在设置页面修改。支持别名：`!p` = `!play`，`!s` = `!skip`，`!n` = `!next`
+
+### AI 与语音说话
+
+HAJIMI 的 AI 功能使用 OpenAI 兼容接口，配置好 `aiApiKey` 后即可通过 TeamSpeak 文字聊天使用：
+
+```text
+!ai 今天适合听什么歌？
+!ai 帮我放一首周杰伦的安静
+!ai 用 QQ 音乐放一首轻松一点的歌
+```
+
+AI 会根据当前播放状态、队列、播放模式和当前歌曲来回答。普通问题会返回文字回复；如果识别为明确的点歌请求，会自动转换成播放动作并调用现有音源搜索。
+
+TTS 功能使用 OpenAI 兼容的 `/v1/audio/speech` 接口。开启后可以直接让机器人在语音频道说话：
+
+```text
+!say 大家好，我是 HAJIMI
+```
+
+注意：
+
+- `!say` 要求当前没有音乐正在播放；如果正在播放音乐，会提示先停止音乐
+- `!ai` 的语音回复会优先播报，播报完成后会尝试从原进度恢复音乐
+- TTS 文本有长度限制，过长内容会被拒绝，避免机器人长时间占用语音频道
+- 如果没有配置 TTS，`!ai` 仍可正常文字回复，`!say` 会提示 TTS 未配置
 
 ### 音质等级
 
@@ -334,8 +370,12 @@ sudo systemctl start tsmusicbot
 ## 项目架构
 
 ```
-teamspeak-music-bot/
+HAJIMI/
 ├── src/                        # 后端源码 (TypeScript)
+│   ├── ai/                     # AI 与 TTS
+│   │   ├── chat.assistant.ts   # OpenAI 兼容聊天/意图解析，支持智能点歌
+│   │   ├── tts.http.ts         # OpenAI 兼容语音合成客户端
+│   │   └── voice.capture.ts    # 语音输入预留模块
 │   ├── audio/                  # 音频管线：FFmpeg → PCM → Opus → 20ms 帧
 │   │   ├── encoder.ts          # Opus 编码器 (@discordjs/opus)
 │   │   ├── player.ts           # FFmpeg 播放器（内置 ffmpeg-static，帧计数进度追踪）
@@ -402,6 +442,8 @@ teamspeak-music-bot/
 | **网易云 API** | NeteaseCloudMusicApi |
 | **QQ 音乐 API** | @sansenjian/qq-music-api |
 | **哔哩哔哩** | BiliBili Web API（搜索、DASH 音频流、QR 登录） |
+| **AI 对话** | OpenAI 兼容 Chat Completions API（默认 DeepSeek） |
+| **文字转语音** | OpenAI 兼容 Audio Speech API（默认 VoxCPM2 服务地址） |
 | **前端框架** | Vue 3, Vite 5, Pinia, Vue Router 4 |
 | **界面样式** | SCSS（YesPlayMusic 设计风格） |
 | **图标** | @iconify/vue |
@@ -472,11 +514,52 @@ pip install -U yt-dlp
   "adminPassword": "",
   "adminGroups": [],
   "autoReturnDelay": 300,
-  "autoPauseOnEmpty": true
+  "autoPauseOnEmpty": true,
+  "idleTimeoutMinutes": 0,
+  "publicUrl": "",
+  "trustProxy": false,
+  "aiEnabled": true,
+  "aiApiKey": "",
+  "aiBaseUrl": "https://api.deepseek.com/v1",
+  "aiModel": "deepseek-chat",
+  "ttsEnabled": false,
+  "ttsBaseUrl": "http://127.0.0.1:8000",
+  "ttsApiKey": "",
+  "ttsModel": "openbmb/VoxCPM2",
+  "ttsVoice": "default",
+  "ttsFormat": "wav"
 }
 ```
 
 > **关于 `adminPassword` 和 `adminGroups`**：这两个字段保留是为了兼容旧 `config.json`，但当前版本未使用。WebUI 鉴权改为基于数据库的用户账号系统（见 [首次配置](#首次配置)），无需在 `config.json` 中设置密码。
+
+### AI 配置
+
+AI 使用 OpenAI 兼容的 `/chat/completions` 接口：
+
+| 字段 | 说明 |
+|------|------|
+| `aiEnabled` | 是否启用 AI 助手 |
+| `aiApiKey` | AI 服务 API Key。请不要提交到公开仓库 |
+| `aiBaseUrl` | AI 服务地址，默认 `https://api.deepseek.com/v1` |
+| `aiModel` | 聊天模型，默认 `deepseek-chat` |
+
+也可以通过环境变量覆盖：`AI_API_KEY` / `OPENAI_API_KEY`、`AI_BASE_URL` / `OPENAI_BASE_URL`、`AI_MODEL` / `OPENAI_MODEL`。
+
+### TTS 配置
+
+TTS 使用 OpenAI 兼容的 `/v1/audio/speech` 接口。你可以接入本地 VoxCPM、OpenAI Audio Speech，或任何兼容服务：
+
+| 字段 | 说明 |
+|------|------|
+| `ttsEnabled` | 是否启用文字转语音 |
+| `ttsBaseUrl` | TTS 服务地址，默认 `http://127.0.0.1:8000` |
+| `ttsApiKey` | TTS 服务 API Key。本地服务不需要鉴权时可留空 |
+| `ttsModel` | TTS 模型名，默认 `openbmb/VoxCPM2` |
+| `ttsVoice` | 默认音色，`!say` 会使用该音色 |
+| `ttsFormat` | 输出格式，支持 `wav` 或 `mp3` |
+
+TTS 服务需要返回可被 FFmpeg 解码的音频文件。开启后，`!say <文字>` 会把文字合成为临时音频并播放；`!ai` 回复也会尝试自动语音播报。
 
 ### 反向代理部署注意事项
 
@@ -524,6 +607,18 @@ A：B站搜索需要 buvid3 匿名 Cookie（程序启动时自动获取）。如
 **Q：YouTube 平台搜索返回空结果？**
 A：YouTube 是可选音源，需要手动安装 `yt-dlp`。详见 [可选：YouTube 音源](#可选youtube-音源) 章节。快速验证：在项目根目录执行 `bin/yt-dlp --version`（或系统 `yt-dlp --version`），能打印版本号即可。若 yt-dlp 已安装但仍搜索失败，通常是网络/地域问题或 yt-dlp 版本过旧（执行 `yt-dlp -U` 升级）。
 
+**Q：`!ai` 提示 AI 未配置？**
+A：检查 `config.json` 中的 `aiEnabled` 和 `aiApiKey`。如果使用 DeepSeek，通常需要设置 `aiBaseUrl: "https://api.deepseek.com/v1"` 和 `aiModel: "deepseek-chat"`。如果使用 OpenAI 或其他兼容服务，改成对应的 Base URL 和模型名即可。
+
+**Q：`!say` 提示 TTS 未配置？**
+A：检查 `ttsEnabled` 是否为 `true`，并确认 `ttsBaseUrl` 指向一个可访问的 OpenAI 兼容语音合成服务。程序会请求 `${ttsBaseUrl}/v1/audio/speech`，服务需要返回 `wav` 或 `mp3` 音频。
+
+**Q：AI 回复为什么会先变成日语再播报？**
+A：当前 HAJIMI 的语音人设偏向可爱活泼的日语口播。`!ai` 文字回复仍然是中文；语音播报前会调用 AI 把中文回复转换成自然日语，再交给 TTS 合成。如果只想中文播报，可以在 `src/ai/chat.assistant.ts` 的 `toJapaneseSpeechText` 提示词和 `src/bot/instance.ts` 的 AI 播报逻辑中调整。
+
+**Q：AI/TTS 播报会打断音乐吗？**
+A：会短暂接管播放管线。AI 回复会先降低当前音乐音量，然后播放 TTS，结束后尝试从原进度恢复当前歌曲。`!say` 是手动说话命令，要求当前没有音乐正在播放。
+
 **Q：如何更新到新版本？**
 A：`git pull` 拉取最新代码，然后 `npm install && npm run build && npm start` 重新构建启动。Docker 用户执行 `docker-compose up -d --build`。
 
@@ -552,7 +647,7 @@ A：本项目内置 `/login` 限流（每 IP 每分钟 5 次），但生产部�
 
 ## 更新日志
 
-> 完整历史请查看 [git log](https://github.com/ZHANGTIANYAO1/teamspeak-music-bot/commits/main) 或 [Releases](https://github.com/ZHANGTIANYAO1/teamspeak-music-bot/releases)。这里只列出重要变更和面向用户的破坏性改动。
+> 完整历史请查看 [git log](https://github.com/Myst1ine/-teamspeak-/commits/main) 或 [Releases](https://github.com/Myst1ine/-teamspeak-/releases)。这里只列出重要变更和面向用户的破坏性改动。
 
 ### 最新版本
 
